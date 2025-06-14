@@ -5,10 +5,8 @@ build
 
 # dependencies
 Client/node_modules
-server/node_modules
-server/uploads
-server/.env
-Client/.env
+Server/node_modules
+Server/uploads
 
 /.pnp
 .pnp.js
