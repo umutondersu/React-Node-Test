@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { Button, Menu, MenuButton, MenuItem, MenuList, Text, useDisclosure } from '@chakra-ui/react';
-import { getApi } from 'services/api';
 import { HasAccess } from '../../../redux/accessUtils';
 import CommonCheckTable from '../../../components/reactTable/checktable';
 import { SearchIcon } from "@chakra-ui/icons";
@@ -10,10 +9,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import MeetingAdvanceSearch from './components/MeetingAdvanceSearch';
 import AddMeeting from './components/Addmeeting';
 import CommonDeleteModel from 'components/commonDeleteModel';
-import { deleteManyApi } from 'services/api';
 import { toast } from 'react-toastify';
-import { fetchMeetingData } from '../../../redux/slices/meetingSlice';
+import { setMeetingLoading, setMeetingData, setMeetingError } from '../../../redux/slices/meetingSlice';
 import { useDispatch } from 'react-redux';
+import { deleteManyApi, getApi } from 'services/api';
 
 const Index = () => {
     const title = "Meeting";
@@ -79,13 +78,24 @@ const Index = () => {
 
     const fetchData = async () => {
         setIsLoding(true)
-        const result = await dispatch(fetchMeetingData())
-        if (result.payload.status === 200) {
-            setData(result?.payload?.data);
-        } else {
+        dispatch(setMeetingLoading(true))
+        try {
+            const result = await getApi('api/meeting/')
+            if (result.status === 200) {
+                setData(result?.data);
+                dispatch(setMeetingData(result?.data));
+            } else {
+                toast.error("Failed to fetch data", "error");
+                dispatch(setMeetingError("Failed to fetch data"));
+            }
+        } catch (error) {
+            console.log(error);
             toast.error("Failed to fetch data", "error");
+            dispatch(setMeetingError("Failed to fetch data"));
+        } finally {
+            setIsLoding(false)
+            dispatch(setMeetingLoading(false))
         }
-        setIsLoding(false)
     }
 
     const handleDeleteMeeting = async (ids) => {

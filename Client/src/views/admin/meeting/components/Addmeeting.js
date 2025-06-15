@@ -10,7 +10,7 @@ import { LiaMousePointerSolid } from 'react-icons/lia';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { MeetingSchema } from 'schema';
-import { getApi, postApi } from 'services/api';
+import { postApi } from 'services/api';
 
 const AddMeeting = (props) => {
     const { onClose, isOpen, setAction, from, fetchData, view } = props
@@ -21,12 +21,8 @@ const AddMeeting = (props) => {
     const [leadModelOpen, setLeadModel] = useState(false);
     const todayTime = new Date().toISOString().split('.')[0];
     const leadData = useSelector((state) => state?.leadData?.data);
-
-
+    const contactList = useSelector((state) => state?.contactData?.data);
     const user = JSON.parse(localStorage.getItem('user'))
-
-    const contactList = useSelector((state) => state?.contactData?.data)
-
 
     const initialValues = {
         agenda: '',
@@ -43,22 +39,43 @@ const AddMeeting = (props) => {
         initialValues: initialValues,
         validationSchema: MeetingSchema,
         onSubmit: (values, { resetForm }) => {
-            
+            AddData(values, resetForm);
         },
     });
     const { errors, touched, values, handleBlur, handleChange, handleSubmit, setFieldValue } = formik
 
-    const AddData = async () => {
-
+    const AddData = async (values, resetForm) => {
+        setIsLoding(true);
+        try {
+            const result = await postApi('api/meeting/add', values);
+            if (result.status === 200) {
+                toast.success("Meeting added successfully");
+                resetForm();
+                onClose();
+                if (setAction) setAction((prev) => !prev);
+            } else {
+                toast.error("Failed to add meeting");
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to add meeting");
+        } finally {
+            setIsLoding(false);
+        }
     };
 
     const fetchAllData = async () => {
-        
+        // Set data from Redux store
+        if (values.related === "Contact") {
+            setContactData(contactList || []);
+        } else if (values.related === "Lead") {
+            setLeadData(leadData || []);
+        }
     }
 
     useEffect(() => {
-
-    }, [props.id, values.related])
+        fetchAllData();
+    }, [props.id, values.related, contactList, leadData])
 
     const extractLabels = (selectedItems) => {
         return selectedItems.map((item) => item._id);
