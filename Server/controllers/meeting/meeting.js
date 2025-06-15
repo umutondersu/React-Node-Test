@@ -143,6 +143,30 @@ const deleteData = async (req, res) => {
     }
 }
 
+const edit = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updateData = req.body;
+        
+        // Ensure the meeting exists and is not deleted
+        const existingMeeting = await MeetingHistory.findOne({ _id: id, deleted: false });
+        if (!existingMeeting) {
+            return res.status(404).json({ message: "Meeting not found." });
+        }
+        
+        const result = await MeetingHistory.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        );
+        
+        res.status(200).json(result);
+    } catch (err) {
+        console.error('Failed to update Meeting:', err);
+        res.status(400).json({ err, error: 'Failed to update Meeting' });
+    }
+}
+
 const deleteMany = async (req, res) => {
     try {
         const result = await MeetingHistory.updateMany(
@@ -156,4 +180,4 @@ const deleteMany = async (req, res) => {
     }
 }
 
-module.exports = { add, index, view, deleteData, deleteMany }
+module.exports = { add, index, view, edit, deleteData, deleteMany }

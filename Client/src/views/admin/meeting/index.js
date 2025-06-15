@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DeleteIcon, ViewIcon } from '@chakra-ui/icons';
+import { DeleteIcon, EditIcon, ViewIcon } from '@chakra-ui/icons';
 import { Button, Menu, MenuButton, MenuItem, MenuList, Text, useDisclosure } from '@chakra-ui/react';
 import { HasAccess } from '../../../redux/accessUtils';
 import CommonCheckTable from '../../../components/reactTable/checktable';
@@ -23,13 +23,14 @@ const Index = () => {
     const [advanceSearch, setAdvanceSearch] = useState(false);
     const [getTagValuesOutSide, setGetTagValuesOutside] = useState([]);
     const [searchboxOutside, setSearchboxOutside] = useState('');
-    const user = JSON.parse(localStorage.getItem("user"));
     const [deleteMany, setDeleteMany] = useState(false);
     const [isLoding, setIsLoding] = useState(false);
     const [data, setData] = useState([]);
     const [displaySearchData, setDisplaySearchData] = useState(false);
     const [searchedData, setSearchedData] = useState([]);
     const [permission] = HasAccess(['Meetings'])
+    const [edit, setEdit] = useState(false);
+    const [selectedMeeting, setSelectedMeeting] = useState(null);
     const dispatch = useDispatch()
 
 
@@ -44,6 +45,9 @@ const Index = () => {
                         {permission?.view && <MenuItem py={2.5} color={'green'}
                             onClick={() => navigate(`/meeting/${row?.values._id}`)}
                             icon={<ViewIcon fontSize={15} />}>View</MenuItem>}
+                        {permission?.update && <MenuItem py={2.5} color={'blue'}
+                            onClick={() => handleEditMeeting(row?.values)}
+                            icon={<EditIcon fontSize={15} />}>Edit</MenuItem>}
                         {permission?.delete && <MenuItem py={2.5} color={'red'} onClick={() => { setDeleteMany(true); setSelectedValues([row?.values?._id]); }} icon={<DeleteIcon fontSize={15} />}>Delete</MenuItem>}
                     </MenuList>
                 </Menu>
@@ -115,6 +119,24 @@ const Index = () => {
         }
     }
 
+    const handleEditMeeting = (meeting) => {
+        setSelectedMeeting(meeting);
+        setEdit(true);
+        onOpen();
+    }
+
+    const handleAddMeeting = () => {
+        setSelectedMeeting(null);
+        setEdit(false);
+        onOpen();
+    }
+
+    const handleCloseModal = () => {
+        setSelectedMeeting(null);
+        setEdit(false);
+        onClose();
+    }
+
     // const [selectedColumns, setSelectedColumns] = useState([...tableColumns]);
     // const dataColumn = tableColumns?.filter(item => selectedColumns?.find(colum => colum?.Header === item.Header))
 
@@ -144,7 +166,7 @@ const Index = () => {
                 // setSelectedColumns={setSelectedColumns}
                 // isOpen={isOpen}
                 // onClose={onClose}
-                onOpen={onOpen}
+                onOpen={handleAddMeeting}
                 selectedValues={selectedValues}
                 setSelectedValues={setSelectedValues}
                 setDelete={setDeleteMany}
@@ -168,7 +190,13 @@ const Index = () => {
                 setGetTagValues={setGetTagValuesOutside}
                 setSearchbox={setSearchboxOutside}
             />
-            <AddMeeting setAction={setAction} isOpen={isOpen} onClose={onClose} />
+            <AddMeeting 
+                setAction={setAction} 
+                isOpen={isOpen} 
+                onClose={handleCloseModal} 
+                edit={edit}
+                selectedMeeting={selectedMeeting}
+            />
 
             {/* Delete model */}
             <CommonDeleteModel isOpen={deleteMany} onClose={() => setDeleteMany(false)} type='Meetings' handleDeleteData={handleDeleteMeeting} ids={selectedValues} />

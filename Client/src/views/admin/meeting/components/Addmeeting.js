@@ -10,10 +10,10 @@ import { LiaMousePointerSolid } from 'react-icons/lia';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import { MeetingSchema } from 'schema';
-import { postApi } from 'services/api';
+import { postApi, putApi } from 'services/api';
 
 const AddMeeting = (props) => {
-    const { onClose, isOpen, setAction, from, fetchData, view } = props
+    const { onClose, isOpen, setAction, from, fetchData, view, edit, selectedMeeting } = props
     const [leaddata, setLeadData] = useState([])
     const [contactdata, setContactData] = useState([])
     const [isLoding, setIsLoding] = useState(false)
@@ -24,7 +24,16 @@ const AddMeeting = (props) => {
     const contactList = useSelector((state) => state?.contactData?.data);
     const user = JSON.parse(localStorage.getItem('user'))
 
-    const initialValues = {
+    const initialValues = edit && selectedMeeting ? {
+        agenda: selectedMeeting.agenda || '',
+        attendes: selectedMeeting.attendes || (props.leadContect === 'contactView' && props.id ? [props.id] : []),
+        attendesLead: selectedMeeting.attendesLead || (props.leadContect === 'leadView' && props.id ? [props.id] : []),
+        location: selectedMeeting.location || '',
+        related: selectedMeeting.related || (props.leadContect === 'contactView' ? 'Contact' : props.leadContect === 'leadView' ? 'Lead' : 'None'),
+        dateTime: selectedMeeting.dateTime || '',
+        notes: selectedMeeting.notes || '',
+        createBy: selectedMeeting.createBy || user?._id,
+    } : {
         agenda: '',
         attendes: props.leadContect === 'contactView' && props.id ? [props.id] : [],
         attendesLead: props.leadContect === 'leadView' && props.id ? [props.id] : [],
@@ -38,8 +47,9 @@ const AddMeeting = (props) => {
     const formik = useFormik({
         initialValues: initialValues,
         validationSchema: MeetingSchema,
+        enableReinitialize: true,
         onSubmit: (values, { resetForm }) => {
-            AddData(values, resetForm);
+            edit ? UpdateData(values, resetForm) : AddData(values, resetForm);
         },
     });
     const { errors, touched, values, handleBlur, handleChange, handleSubmit, setFieldValue } = formik
@@ -59,6 +69,26 @@ const AddMeeting = (props) => {
         } catch (error) {
             console.log(error);
             toast.error("Failed to add meeting");
+        } finally {
+            setIsLoding(false);
+        }
+    };
+
+    const UpdateData = async (values, resetForm) => {
+        setIsLoding(true);
+        try {
+            const result = await putApi(`api/meeting/edit/${selectedMeeting._id}`, values);
+            if (result.status === 200) {
+                toast.success("Meeting updated successfully");
+                resetForm();
+                onClose();
+                if (setAction) setAction((prev) => !prev);
+            } else {
+                toast.error("Failed to update meeting");
+            }
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to update meeting");
         } finally {
             setIsLoding(false);
         }
@@ -91,7 +121,7 @@ const AddMeeting = (props) => {
         <Modal onClose={onClose} isOpen={isOpen} isCentered>
             <ModalOverlay />
             <ModalContent height={"580px"}>
-                <ModalHeader>Add Meeting </ModalHeader>
+                <ModalHeader>{edit ? 'Edit Meeting' : 'Add Meeting'}</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody overflowY={"auto"} height={"400px"}>
                     {/* Contact Model  */}
